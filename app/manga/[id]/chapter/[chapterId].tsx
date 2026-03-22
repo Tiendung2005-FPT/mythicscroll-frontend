@@ -13,7 +13,11 @@ import {
   TouchableWithoutFeedback,
 } from "react-native";
 import { useLocalSearchParams, router, Stack } from "expo-router";
-import { getChapterById, Chapter, getChaptersByMangaId } from "../../../../services/api";
+import {
+  getChapterById,
+  Chapter,
+  getChaptersByMangaId,
+} from "../../../../services/api";
 import { Colors } from "../../../../constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -437,7 +441,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   header: {
-    paddingTop: 10,
+    paddingTop: 60,
     paddingBottom: 12,
     flexDirection: "row",
     alignItems: "center",

@@ -10,13 +10,16 @@ import {
   ActivityIndicator,
   useColorScheme,
   Alert,
+  Image,
 } from "react-native";
 import { Stack, useLocalSearchParams, router } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
 import {
   getChapterByIdAdmin,
   createChapter,
   updateChapter,
   Chapter,
+  uploadMultipleImages,
 } from "../../../../../services/api";
 import { Colors } from "../../../../../constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
@@ -42,6 +45,7 @@ export default function ChapterFormScreen() {
   });
 
   const [pagesText, setPagesText] = useState("");
+  const [localPageUris, setLocalPageUris] = useState<string[]>([]);
 
   useEffect(() => {
     if (!isNew) {
@@ -61,20 +65,58 @@ export default function ChapterFormScreen() {
     }
   }, [chapterId]);
 
-  const handleSave = async () => {
-    const pages = pagesText
-      .split("\n")
-      .map((p) => p.trim())
-      .filter((p) => p.length > 0);
+  const pickImages = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      quality: 0.8,
+    });
 
-    if (!formData.title || pages.length === 0) {
-      Alert.alert("Error", "Title and at least one page URL are required");
-      return;
+    if (!result.canceled) {
+      const uris = result.assets.map((a) => a.uri);
+      setLocalPageUris([...localPageUris, ...uris]);
     }
+  };
+
+  const removeLocalPage = (index: number) => {
+    setLocalPageUris(localPageUris.filter((_, i: number) => i !== index));
+  };
+
+  const removeExistingPage = (index: number) => {
+    if (formData.pages) {
+      setFormData({
+        ...formData,
+        pages: formData.pages.filter((_, i: number) => i !== index),
+      });
+    }
+  };
+
+  const handleSave = async () => {
+    const manualPages = pagesText
+      .split("\n")
+      .map((p: string) => p.trim())
+      .filter((p: string) => p.length > 0);
 
     setSaving(true);
     try {
-      const payload = { ...formData, pages };
+      let uploadedUrls: string[] = [];
+      if (localPageUris.length > 0) {
+        uploadedUrls = await uploadMultipleImages(localPageUris);
+      }
+
+      const finalPages = [
+        ...(formData.pages || []),
+        ...uploadedUrls,
+        ...manualPages,
+      ];
+
+      if (!formData.title || finalPages.length === 0) {
+        Alert.alert("Error", "Title and at least one page URL are required");
+        setSaving(false);
+        return;
+      }
+
+      const payload = { ...formData, pages: finalPages };
       if (isNew) {
         await createChapter(payload);
         Alert.alert("Success", "Chapter created successfully");
@@ -162,7 +204,66 @@ export default function ChapterFormScreen() {
           />
 
           <Text style={[styles.label, { color: theme.text }]}>
-            Pages (one URL per line)
+            Chapter Pages
+          </Text>
+
+          <View style={styles.pagesList}>
+            {formData.pages?.map((uri: string, idx: number) => (
+              <View
+                key={`existing-${idx}`}
+                style={[styles.pageThumb, { borderColor: theme.border }]}
+              >
+                <Image source={{ uri }} style={styles.pageImage} />
+                <Pressable
+                  style={styles.removePageBtn}
+                  onPress={() => removeExistingPage(idx)}
+                >
+                  <Ionicons name="close-circle" size={20} color="#E74C3C" />
+                </Pressable>
+                <Text style={styles.pageNumber}>{idx + 1}</Text>
+              </View>
+            ))}
+
+            {localPageUris.map((uri: string, idx: number) => (
+              <View
+                key={`local-${idx}`}
+                style={[
+                  styles.pageThumb,
+                  { borderColor: theme.tint, borderWidth: 2 },
+                ]}
+              >
+                <Image source={{ uri }} style={styles.pageImage} />
+                <Pressable
+                  style={styles.removePageBtn}
+                  onPress={() => removeLocalPage(idx)}
+                >
+                  <Ionicons name="close-circle" size={20} color="#E74C3C" />
+                </Pressable>
+                <View style={styles.newBadge}>
+                  <Text style={styles.newBadgeText}>NEW</Text>
+                </View>
+                <Text style={styles.pageNumber}>
+                  {(formData.pages?.length || 0) + idx + 1}
+                </Text>
+              </View>
+            ))}
+
+            <Pressable
+              style={[
+                styles.addPageBtn,
+                { backgroundColor: theme.surface, borderColor: theme.border },
+              ]}
+              onPress={pickImages}
+            >
+              <Ionicons name="add" size={30} color={theme.tint} />
+              <Text style={[styles.addPageText, { color: theme.tint }]}>
+                Add Pages
+              </Text>
+            </Pressable>
+          </View>
+
+          <Text style={[styles.label, { color: theme.text, marginTop: 20 }]}>
+            Manual URLs (one per line)
           </Text>
           <TextInput
             style={[
@@ -176,10 +277,10 @@ export default function ChapterFormScreen() {
             ]}
             value={pagesText}
             onChangeText={setPagesText}
-            placeholder="https://example.com/page1.jpg"
+            placeholder="https://example.com/page.jpg"
             placeholderTextColor={theme.icon}
             multiline
-            numberOfLines={10}
+            numberOfLines={5}
           />
 
           <View style={styles.switchRow}>
@@ -223,7 +324,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingTop: 10,
+    paddingTop: 60,
     paddingHorizontal: 16,
     paddingBottom: 10,
   },
@@ -239,7 +340,71 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     fontSize: 15,
   },
-  textArea: { height: 200, textAlignVertical: "top" },
+  textArea: { height: 100, textAlignVertical: "top" },
+  pagesList: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    marginBottom: 10,
+  },
+  pageThumb: {
+    width: 80,
+    height: 120,
+    borderRadius: 8,
+    borderWidth: 1,
+    overflow: "hidden",
+    position: "relative",
+  },
+  pageImage: {
+    width: "100%",
+    height: "100%",
+  },
+  removePageBtn: {
+    position: "absolute",
+    top: 2,
+    right: 2,
+    zIndex: 1,
+    backgroundColor: "rgba(255,255,255,0.7)",
+    borderRadius: 10,
+  },
+  pageNumber: {
+    position: "absolute",
+    bottom: 2,
+    left: 2,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    color: "#fff",
+    fontSize: 10,
+    paddingHorizontal: 4,
+    borderRadius: 4,
+    overflow: "hidden",
+  },
+  newBadge: {
+    position: "absolute",
+    top: 2,
+    left: 2,
+    backgroundColor: "#2ECC71",
+    paddingHorizontal: 4,
+    borderRadius: 4,
+  },
+  newBadgeText: {
+    color: "#fff",
+    fontSize: 8,
+    fontWeight: "bold",
+  },
+  addPageBtn: {
+    width: 80,
+    height: 120,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 4,
+  },
+  addPageText: {
+    fontSize: 10,
+    fontWeight: "700",
+  },
   switchRow: {
     flexDirection: "row",
     justifyContent: "space-between",

@@ -10,13 +10,16 @@ import {
   ActivityIndicator,
   useColorScheme,
   Alert,
+  Image,
 } from "react-native";
 import { Stack, useLocalSearchParams, router } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
 import {
   getMangaByIdAdmin,
   createManga,
   updateManga,
   Manga,
+  uploadSingleImage,
 } from "../../../services/api";
 import { Colors } from "../../../constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
@@ -40,6 +43,8 @@ export default function MangaFormScreen() {
     isDisplayed: true,
   });
 
+  const [localImageUri, setLocalImageUri] = useState<string | null>(null);
+
   useEffect(() => {
     if (!isNew) {
       const fetchManga = async () => {
@@ -57,19 +62,40 @@ export default function MangaFormScreen() {
     }
   }, [id]);
 
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [2, 3],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      setLocalImageUri(result.assets[0].uri);
+    }
+  };
+
   const handleSave = async () => {
-    if (!formData.title || !formData.coverUrl) {
-      Alert.alert("Error", "Title and Cover URL are required");
+    if (!formData.title || (!formData.coverUrl && !localImageUri)) {
+      Alert.alert("Error", "Title and Cover are required");
       return;
     }
 
     setSaving(true);
     try {
+      let finalCoverUrl = formData.coverUrl;
+
+      if (localImageUri) {
+        finalCoverUrl = await uploadSingleImage(localImageUri);
+      }
+
+      const payload = { ...formData, coverUrl: finalCoverUrl };
+
       if (isNew) {
-        await createManga(formData);
+        await createManga(payload);
         Alert.alert("Success", "Manga created successfully");
       } else {
-        await updateManga(id, formData);
+        await updateManga(id, payload);
         Alert.alert("Success", "Manga updated successfully");
       }
       router.back();
@@ -95,8 +121,16 @@ export default function MangaFormScreen() {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
-        <Pressable onPress={() => router.replace('/(admin)/admin-manga' as any)} style={styles.backButton}>
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: theme.surface, borderBottomColor: theme.border },
+        ]}
+      >
+        <Pressable
+          onPress={() => router.replace("/(admin)/admin-manga" as any)}
+          style={styles.backButton}
+        >
           <Ionicons name="arrow-back" size={24} color={theme.text} />
         </Pressable>
         <Text style={[styles.headerTitle, { color: theme.text }]}>
@@ -144,23 +178,35 @@ export default function MangaFormScreen() {
             numberOfLines={4}
           />
 
-          <Text style={[styles.label, { color: theme.text }]}>Cover URL</Text>
-          <TextInput
+          <Text style={[styles.label, { color: theme.text }]}>Cover Image</Text>
+          <Pressable
             style={[
-              styles.input,
-              {
-                backgroundColor: theme.surface,
-                color: theme.text,
-                borderColor: theme.border,
-              },
+              styles.imagePicker,
+              { backgroundColor: theme.surface, borderColor: theme.border },
             ]}
-            value={formData.coverUrl}
-            onChangeText={(text) =>
-              setFormData({ ...formData, coverUrl: text })
-            }
-            placeholder="https://example.com/cover.jpg"
-            placeholderTextColor={theme.icon}
-          />
+            onPress={pickImage}
+          >
+            {localImageUri || formData.coverUrl ? (
+              <View style={styles.previewContainer}>
+                <Image
+                  source={{ uri: localImageUri || formData.coverUrl }}
+                  style={styles.coverPreview}
+                  resizeMode="cover"
+                />
+                <View style={styles.changeImageOverlay}>
+                  <Ionicons name="camera" size={24} color="#fff" />
+                  <Text style={styles.changeImageText}>Change Image</Text>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.imagePlaceholder}>
+                <Ionicons name="image-outline" size={40} color={theme.icon} />
+                <Text style={[styles.placeholderText, { color: theme.icon }]}>
+                  Select Cover Image
+                </Text>
+              </View>
+            )}
+          </Pressable>
 
           <View style={styles.row}>
             <View style={{ flex: 1, marginRight: 10 }}>
@@ -172,17 +218,19 @@ export default function MangaFormScreen() {
                     style={[
                       styles.statusButton,
                       { borderColor: theme.tint },
-                      formData.status?.toLowerCase() === s.toLowerCase() && { backgroundColor: theme.tint },
+                      formData.status?.toLowerCase() === s.toLowerCase() && {
+                        backgroundColor: theme.tint,
+                      },
                     ]}
-                    onPress={() =>
-                      setFormData({ ...formData, status: s })
-                    }
+                    onPress={() => setFormData({ ...formData, status: s })}
                   >
                     <Text
                       style={[
                         styles.statusButtonText,
                         { color: theme.tint },
-                        formData.status?.toLowerCase() === s.toLowerCase() && { color: "#fff" },
+                        formData.status?.toLowerCase() === s.toLowerCase() && {
+                          color: "#fff",
+                        },
                       ]}
                     >
                       {s}
@@ -273,7 +321,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingTop: 10,
+    paddingTop: 60,
     paddingHorizontal: 16,
     paddingBottom: 10,
   },
@@ -290,6 +338,49 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   textArea: { height: 100, textAlignVertical: "top" },
+  imagePicker: {
+    height: 250,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    marginBottom: 20,
+    overflow: "hidden",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  previewContainer: {
+    width: "100%",
+    height: "100%",
+    position: "relative",
+  },
+  coverPreview: {
+    width: "100%",
+    height: "100%",
+  },
+  changeImageOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    padding: 10,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+  },
+  changeImageText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  imagePlaceholder: {
+    alignItems: "center",
+    gap: 8,
+  },
+  placeholderText: {
+    fontSize: 14,
+  },
   row: { flexDirection: "row", marginBottom: 20 },
   statusButtons: { flexDirection: "row", gap: 8 },
   statusButton: {

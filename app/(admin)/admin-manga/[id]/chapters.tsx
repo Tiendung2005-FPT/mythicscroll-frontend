@@ -63,7 +63,9 @@ export default function ChapterManagementScreen() {
         </Text>
         <Text style={[styles.details, { color: theme.icon }]}>
           {item.pages.length} Pages •{" "}
-          {item.uploadedAt ? new Date(item.uploadedAt).toLocaleDateString() : 'Just now'}
+          {item.uploadedAt
+            ? new Date(item.uploadedAt).toLocaleDateString()
+            : "Just now"}
         </Text>
         <View style={styles.badgeContainer}>
           {!item.isDisplayed && (
@@ -81,14 +83,30 @@ export default function ChapterManagementScreen() {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
-        <Pressable onPress={() => router.replace(`/(admin)/admin-manga/${id}` as any)} style={styles.backButton}>
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: theme.surface, borderBottomColor: theme.border },
+        ]}
+      >
+        <Pressable
+          onPress={() => router.replace(`/(admin)/admin-manga/${id}` as any)}
+          style={styles.backButton}
+        >
           <Ionicons name="arrow-back" size={24} color={theme.text} />
         </Pressable>
-        <Text style={[styles.headerTitle, { color: theme.text }]} numberOfLines={1}>
+        <Text
+          style={[styles.headerTitle, { color: theme.text }]}
+          numberOfLines={1}
+        >
           {manga ? `${manga.title} - Chapters` : "Chapters"}
         </Text>
-        <Pressable onPress={() => router.push(`/(admin)/admin-manga/${id}/chapter/new` as any)} style={styles.addButton}>
+        <Pressable
+          onPress={() =>
+            router.push(`/(admin)/admin-manga/${id}/chapter/new` as any)
+          }
+          style={styles.addButton}
+        >
           <Ionicons name="add" size={28} color={theme.tint} />
         </Pressable>
       </View>
@@ -124,13 +142,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingTop: 10,
+    paddingTop: 60,
     paddingHorizontal: 16,
     paddingBottom: 10,
   },
   backButton: { padding: 4 },
   addButton: { padding: 4 },
-  headerTitle: { fontSize: 18, fontWeight: "700", flex: 1, textAlign: 'center' },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    flex: 1,
+    textAlign: "center",
+  },
   listContent: { padding: 16 },
   itemCard: {
     flexDirection: "row",

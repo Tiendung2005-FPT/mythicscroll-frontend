@@ -1,8 +1,7 @@
 import axios from 'axios';
 import * as storage from './storage';
 
-export const API_URL = 'http://localhost:9999/api';
-// export const API_URL = 'https://mythicscroll-backend.onrender.com/api';
+export const API_URL = 'https://mythicscroll-backend.onrender.com/api';
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -164,4 +163,34 @@ export const updateChapter = async (id: string, data: Partial<Chapter>): Promise
 
 export const rateManga = async (mangaId: string, rating: number): Promise<void> => {
   await api.post(`/manga/${mangaId}/rate`, { rating });
+};
+
+export const uploadSingleImage = async (uri: string): Promise<string> => {
+  const formData = new FormData();
+  const filename = uri.split('/').pop();
+  const match = /\.(\w+)$/.exec(filename || '');
+  const type = match ? `image/${match[1]}` : `image`;
+
+  formData.append('image', { uri, name: filename, type } as any);
+
+  const res = await api.post('/upload/single', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return res.data.url;
+};
+
+export const uploadMultipleImages = async (uris: string[]): Promise<string[]> => {
+  const formData = new FormData();
+
+  uris.forEach((uri, index) => {
+    const filename = uri.split('/').pop();
+    const match = /\.(\w+)$/.exec(filename || '');
+    const type = match ? `image/${match[1]}` : `image`;
+    formData.append('images', { uri, name: filename, type } as any);
+  });
+
+  const res = await api.post('/upload/multiple', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return res.data.urls;
 };
