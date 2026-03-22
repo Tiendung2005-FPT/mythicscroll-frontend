@@ -51,18 +51,40 @@ const MangaPage = ({ uri, index }: { uri: string; index: number }) => {
   );
 };
 
-const SinglePageViewer = ({ pages }: { pages: string[] }) => {
+const SinglePageViewer = ({
+  pages,
+  theme,
+}: {
+  pages: string[];
+  theme: any;
+}) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [aspectRatio, setAspectRatio] = useState(0.7);
 
   const goTo = (index: number) => {
     setCurrentIndex(Math.max(0, Math.min(pages.length - 1, index)));
   };
 
+  useEffect(() => {
+    Image.getSize(
+      pages[currentIndex],
+      (w, h) => {
+        if (w > 0 && h > 0) setAspectRatio(w / h);
+      },
+      (err) => console.warn("Failed to get image size", err),
+    );
+  }, [currentIndex, pages]);
+
   return (
-    <View style={{ flex: 1 }}>
+    <View style={styles.singlePageContainer}>
       <Image
+        key={pages[currentIndex]}
         source={{ uri: pages[currentIndex] }}
-        style={{ width: SCREEN_WIDTH, height: SCREEN_HEIGHT }}
+        style={{
+          width: SCREEN_WIDTH,
+          aspectRatio,
+          maxHeight: "100%",
+        }}
         resizeMode="contain"
       />
 
@@ -405,8 +427,11 @@ export default function ChapterReaderScreen() {
 
       {readingMode === "long-strip" ? (
         <ScrollView
-          style={styles.reader}
-          contentContainerStyle={styles.readerContent}
+          style={[styles.reader, { backgroundColor: "#000" }]}
+          contentContainerStyle={[
+            styles.readerContent,
+            { backgroundColor: "#000" },
+          ]}
           showsVerticalScrollIndicator={false}
         >
           {chapter.pages.map((page, index) => (
@@ -414,7 +439,7 @@ export default function ChapterReaderScreen() {
           ))}
         </ScrollView>
       ) : (
-        <SinglePageViewer pages={chapter.pages} />
+        <SinglePageViewer pages={chapter.pages} theme={theme} />
       )}
 
       <SettingsModal
@@ -582,5 +607,14 @@ const styles = StyleSheet.create({
   },
   chapterItemText: {
     fontSize: 15,
+  },
+  singlePageContainer: {
+    flex: 1,
+    backgroundColor: "#000",
+    justifyContent: "flex-start",
+    alignItems: "center",
+  },
+  singlePageImage: {
+    width: "100%",
   },
 });
