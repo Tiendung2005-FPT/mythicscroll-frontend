@@ -2,7 +2,7 @@ import axios from 'axios';
 import * as storage from './storage';
 import { Platform } from 'react-native';
 
-export const API_URL = Platform.OS === 'android' ? 'http://10.0.2.2:9999/api' : 'http://localhost:9999/api';
+export const API_URL = 'https://mythicscroll-backend.onrender.com/api';
 
 export const api = axios.create({
   baseURL: API_URL,
