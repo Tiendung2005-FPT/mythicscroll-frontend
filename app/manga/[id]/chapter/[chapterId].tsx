@@ -13,7 +13,7 @@ import {
   TouchableWithoutFeedback,
 } from "react-native";
 import { useLocalSearchParams, router, Stack } from "expo-router";
-import { getChapterById, Chapter } from "../../../../services/api";
+import { getChapterById, Chapter, getChaptersByMangaId } from "../../../../services/api";
 import { Colors } from "../../../../constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -178,28 +178,163 @@ const SettingsModal = ({
   );
 };
 
+const ChapterNavigatorModal = ({
+  visible,
+  onClose,
+  chapters,
+  currentId,
+  theme,
+  mangaId,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  chapters: Chapter[];
+  currentId: string;
+  theme: typeof Colors.dark;
+  mangaId: string;
+}) => {
+  const currentIndex = chapters.findIndex((c) => c._id === currentId);
+  // Chapters sorted descending (-1) so lower index = higher chapter number
+  const nextChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
+  const prevChapter =
+    currentIndex < chapters.length - 1 ? chapters[currentIndex + 1] : null;
+
+  const navigateTo = (id: string) => {
+    onClose();
+    router.replace(`/manga/${mangaId}/chapter/${id}`);
+  };
+
+  return (
+    <Modal
+      transparent
+      animationType="fade"
+      visible={visible}
+      onRequestClose={onClose}
+    >
+      <TouchableWithoutFeedback onPress={onClose}>
+        <View style={styles.modalOverlayCenter}>
+          <TouchableWithoutFeedback>
+            <View
+              style={[
+                styles.navModalBox,
+                { backgroundColor: theme.surface, borderColor: theme.border },
+              ]}
+            >
+              <View style={styles.navHeader}>
+                <Text style={[styles.modalTitle, { color: theme.text }]}>
+                  Navigation
+                </Text>
+                <Ionicons
+                  name="close"
+                  size={24}
+                  color={theme.text}
+                  onPress={onClose}
+                />
+              </View>
+
+              <View style={styles.navControls}>
+                <Pressable
+                  disabled={!prevChapter}
+                  onPress={() => prevChapter && navigateTo(prevChapter._id)}
+                  style={[
+                    styles.navBtn,
+                    { backgroundColor: theme.background },
+                    !prevChapter && { opacity: 0.3 },
+                  ]}
+                >
+                  <Ionicons name="chevron-back" size={20} color={theme.text} />
+                  <Text style={[styles.navBtnText, { color: theme.text }]}>
+                    Prev
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  disabled={!nextChapter}
+                  onPress={() => nextChapter && navigateTo(nextChapter._id)}
+                  style={[
+                    styles.navBtn,
+                    { backgroundColor: theme.background },
+                    !nextChapter && { opacity: 0.3 },
+                  ]}
+                >
+                  <Text style={[styles.navBtnText, { color: theme.text }]}>
+                    Next
+                  </Text>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={20}
+                    color={theme.text}
+                  />
+                </Pressable>
+              </View>
+
+              <Text style={[styles.listLabel, { color: theme.icon }]}>
+                Jump to Chapter
+              </Text>
+              <ScrollView style={styles.chapterList}>
+                {chapters.map((c) => {
+                  const isCurrent = c._id === currentId;
+                  return (
+                    <Pressable
+                      key={c._id}
+                      onPress={() => navigateTo(c._id)}
+                      style={[
+                        styles.chapterItem,
+                        isCurrent && {
+                          backgroundColor: theme.tint + "22",
+                          borderColor: theme.tint,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.chapterItemText,
+                          { color: isCurrent ? theme.tint : theme.text },
+                          isCurrent && { fontWeight: "700" },
+                        ]}
+                      >
+                        Chapter {c.chapterNumber}: {c.title}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          </TouchableWithoutFeedback>
+        </View>
+      </TouchableWithoutFeedback>
+    </Modal>
+  );
+};
+
 export default function ChapterReaderScreen() {
   const { chapterId } = useLocalSearchParams<{ chapterId: string }>();
   const colorScheme = useColorScheme();
   const theme = colorScheme === "dark" ? Colors.dark : Colors.light;
 
   const [chapter, setChapter] = useState<Chapter | null>(null);
+  const [allChapters, setAllChapters] = useState<Chapter[]>([]);
   const [loading, setLoading] = useState(true);
   const [readingMode, setReadingMode] = useState<ReadingMode>("long-strip");
   const [settingsVisible, setSettingsVisible] = useState(false);
+  const [navVisible, setNavVisible] = useState(false);
 
   useEffect(() => {
-    const fetchChapter = async () => {
+    const fetchData = async () => {
       try {
         const res = await getChapterById(chapterId);
         setChapter(res);
+        if (res.mangaId) {
+          const chaptersRes = await getChaptersByMangaId(res.mangaId);
+          setAllChapters(chaptersRes);
+        }
       } catch (error) {
         console.error("Failed to fetch chapter", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchChapter();
+    fetchData();
   }, [chapterId]);
 
   if (loading) {
@@ -251,6 +386,12 @@ export default function ChapterReaderScreen() {
           </Text>
         </View>
         <Pressable
+          onPress={() => setNavVisible(true)}
+          style={styles.settingsButton}
+        >
+          <Ionicons name="list" size={22} color={theme.text} />
+        </Pressable>
+        <Pressable
           onPress={() => setSettingsVisible(true)}
           style={styles.settingsButton}
         >
@@ -279,6 +420,15 @@ export default function ChapterReaderScreen() {
         onChangeMode={setReadingMode}
         theme={theme}
       />
+
+      <ChapterNavigatorModal
+        visible={navVisible}
+        onClose={() => setNavVisible(false)}
+        chapters={allChapters}
+        currentId={chapterId}
+        theme={theme}
+        mangaId={chapter.mangaId}
+      />
     </View>
   );
 }
@@ -300,7 +450,12 @@ const styles = StyleSheet.create({
   settingsButton: { padding: 4, marginLeft: 8 },
   reader: { flex: 1 },
   readerContent: { paddingBottom: 40 },
-
+  modalOverlayCenter: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.45)",
@@ -364,4 +519,64 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   pageIndicatorText: { color: "#fff", fontSize: 13, fontWeight: "600" },
+
+  navModalBox: {
+    width: "90%",
+    maxHeight: "80%",
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
+    elevation: 8,
+  },
+  navHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  navControls: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 24,
+  },
+  navBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  navBtnText: {
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  listLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    marginBottom: 12,
+    opacity: 0.6,
+  },
+  chapterList: {
+    maxHeight: 300,
+  },
+  chapterItem: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: "transparent",
+  },
+  chapterItemText: {
+    fontSize: 15,
+  },
 });
