@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   useColorScheme,
   Alert,
 } from "react-native";
-import { Stack, useLocalSearchParams, router } from "expo-router";
+import { Stack, useLocalSearchParams, router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import {
   getAllChapters,
@@ -43,9 +43,11 @@ export default function ChapterManagementScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, [id]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [id])
+  );
 
   const renderItem = ({ item }: { item: Chapter }) => (
     <Pressable
@@ -62,10 +64,7 @@ export default function ChapterManagementScreen() {
           Chapter {item.chapterNumber}: {item.title}
         </Text>
         <Text style={[styles.details, { color: theme.icon }]}>
-          {item.pages.length} Pages •{" "}
-          {item.uploadedAt
-            ? new Date(item.uploadedAt).toLocaleDateString()
-            : "Just now"}
+          {item.pages.length} Pages
         </Text>
         <View style={styles.badgeContainer}>
           {!item.isDisplayed && (

@@ -37,7 +37,7 @@ export default function MangaFormScreen() {
     title: "",
     description: "",
     coverUrl: "",
-    status: "Ongoing",
+    status: "ongoing",
     year: new Date().getFullYear(),
     genres: [],
     isDisplayed: true,
@@ -211,7 +211,7 @@ export default function MangaFormScreen() {
             <View style={{ flex: 1, marginRight: 10 }}>
               <Text style={[styles.label, { color: theme.text }]}>Status</Text>
               <View style={styles.statusButtons}>
-                {["Ongoing", "Completed"].map((s) => (
+                {["ongoing", "completed"].map((s) => (
                   <Pressable
                     key={s}
                     style={[
@@ -232,7 +232,7 @@ export default function MangaFormScreen() {
                         },
                       ]}
                     >
-                      {s}
+                      {s.charAt(0).toUpperCase() + s.slice(1)}
                     </Text>
                   </Pressable>
                 ))}

@@ -22,11 +22,13 @@ import {
 import { Colors } from "../../constants/Colors";
 import { TagCard } from "../../components/TagCard";
 import { Ionicons } from "@expo/vector-icons";
+import { useAuth } from "../../context/AuthContext";
 
 export default function MangaDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const colorScheme = useColorScheme();
   const theme = colorScheme === "dark" ? Colors.dark : Colors.light;
+  const { user } = useAuth();
 
   const [manga, setManga] = useState<Manga | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
@@ -175,6 +177,23 @@ export default function MangaDetailScreen() {
           </View>
         </View>
 
+        {user?.role?.title === "Admin" && (
+          <Pressable
+            style={[styles.editButton, { backgroundColor: theme.tint }]}
+            onPress={() =>
+              router.push(`/(admin)/admin-manga/${manga._id}` as any)
+            }
+          >
+            <Ionicons
+              name="create-outline"
+              size={20}
+              color="#fff"
+              style={{ marginRight: 8 }}
+            />
+            <Text style={styles.editButtonText}>Edit Manga</Text>
+          </Pressable>
+        )}
+
         <Text style={[styles.sectionTitle, { color: theme.text }]}>
           Description
         </Text>
@@ -187,7 +206,9 @@ export default function MangaDetailScreen() {
             Chapters ({chapters.length})
           </Text>
           <Pressable
-            onPress={() => setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"))}
+            onPress={() =>
+              setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"))
+            }
             style={styles.sortButton}
           >
             <Ionicons
@@ -208,22 +229,22 @@ export default function MangaDetailScreen() {
             return sortOrder === "asc" ? numA - numB : numB - numA;
           })
           .map((chapter) => (
-          <Pressable
-            key={chapter._id}
-            style={({ pressed }) => [
-              styles.chapterRow,
-              { borderBottomColor: theme.border },
-              pressed && { backgroundColor: theme.surface },
-            ]}
-            onPress={() =>
-              router.push(`/manga/${manga._id}/chapter/${chapter._id}` as any)
-            }
-          >
-            <Text style={[styles.chapterTitle, { color: theme.text }]}>
-              Chapter {chapter.chapterNumber}: {chapter.title}
-            </Text>
-          </Pressable>
-        ))}
+            <Pressable
+              key={chapter._id}
+              style={({ pressed }) => [
+                styles.chapterRow,
+                { borderBottomColor: theme.border },
+                pressed && { backgroundColor: theme.surface },
+              ]}
+              onPress={() =>
+                router.push(`/manga/${manga._id}/chapter/${chapter._id}` as any)
+              }
+            >
+              <Text style={[styles.chapterTitle, { color: theme.text }]}>
+                Chapter {chapter.chapterNumber}: {chapter.title}
+              </Text>
+            </Pressable>
+          ))}
       </View>
     </ScrollView>
   );
@@ -388,5 +409,18 @@ const styles = StyleSheet.create({
   sortText: {
     fontSize: 12,
     fontWeight: "600",
+  },
+  editButton: {
+    flexDirection: "row",
+    padding: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 24,
+  },
+  editButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
   },
 });

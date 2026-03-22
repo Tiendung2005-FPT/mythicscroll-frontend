@@ -49,6 +49,7 @@ export default function ChapterFormScreen() {
   const [localPageUris, setLocalPageUris] = useState<string[]>([]);
   const [existingChapters, setExistingChapters] = useState<Chapter[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchAllData = async () => {
@@ -125,7 +126,7 @@ export default function ChapterFormScreen() {
       ];
 
       if (!formData.title || finalPages.length === 0 || !formData.chapterNumber) {
-        Alert.alert("Error", "Title, Chapter Number, and at least one page are required");
+        setErrorMsg("Title, Chapter Number, and at least one page are required");
         setSaving(false);
         return;
       }
@@ -133,7 +134,7 @@ export default function ChapterFormScreen() {
       // Validation
       const currentChapterNumber = parseFloat(formData.chapterNumber.toString());
       if (isNaN(currentChapterNumber)) {
-        Alert.alert("Error", "Invalid chapter number");
+        setErrorMsg("Invalid chapter number");
         setSaving(false);
         return;
       }
@@ -145,7 +146,7 @@ export default function ChapterFormScreen() {
           parseFloat(c.chapterNumber.toString()) === currentChapterNumber
       );
       if (duplicate) {
-        Alert.alert("Error", `Chapter ${currentChapterNumber} already exists!`);
+        setErrorMsg(`Chapter ${currentChapterNumber} already exists in this manga.`);
         setSaving(false);
         return;
       }
@@ -157,8 +158,7 @@ export default function ChapterFormScreen() {
         : 0;
       
       if (currentChapterNumber > maxNum + 1) {
-        Alert.alert(
-          "Invalid Number", 
+        setErrorMsg(
           `You can't jump too far ahead! The maximum allowed number is ${maxNum + 1}.`
         );
         setSaving(false);
@@ -216,6 +216,16 @@ export default function ChapterFormScreen() {
       </View>
 
       <ScrollView style={styles.scrollContent}>
+        {errorMsg && (
+          <View style={styles.errorBanner}>
+            <Ionicons name="alert-circle" size={20} color="#fff" />
+            <Text style={styles.errorText}>{errorMsg}</Text>
+            <Pressable onPress={() => setErrorMsg(null)}>
+              <Ionicons name="close" size={20} color="#fff" />
+            </Pressable>
+          </View>
+        )}
+
         <View style={styles.form}>
           <Text style={[styles.label, { color: theme.text }]}>
             Chapter Title
@@ -230,7 +240,10 @@ export default function ChapterFormScreen() {
               },
             ]}
             value={formData.title}
-            onChangeText={(text) => setFormData({ ...formData, title: text })}
+            onChangeText={(text) => {
+              setFormData({ ...formData, title: text });
+              if (errorMsg) setErrorMsg(null);
+            }}
             placeholder="e.g., The Beginning"
             placeholderTextColor={theme.icon}
           />
@@ -248,9 +261,10 @@ export default function ChapterFormScreen() {
               },
             ]}
             value={formData.chapterNumber?.toString()}
-            onChangeText={(text) =>
-              setFormData((prev) => ({ ...prev, chapterNumber: parseFloat(text) || 0 }))
-            }
+            onChangeText={(text) => {
+              setFormData((prev) => ({ ...prev, chapterNumber: parseFloat(text) || 0 }));
+              if (errorMsg) setErrorMsg(null);
+            }}
             keyboardType="numeric"
             placeholder="1"
             placeholderTextColor={theme.icon}
@@ -471,4 +485,20 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   saveButtonText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  errorBanner: {
+    backgroundColor: "#E74C3C",
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 12,
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 8,
+    gap: 10,
+  },
+  errorText: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "600",
+    flex: 1,
+  },
 });

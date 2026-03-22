@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   useColorScheme,
   Image,
 } from "react-native";
-import { Stack, router } from "expo-router";
+import { Stack, router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { getAllMangas, Manga } from "../../../services/api";
 import { Colors } from "../../../constants/Colors";
@@ -31,9 +31,11 @@ export default function MangaManagementScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchMangas();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchMangas();
+    }, [])
+  );
 
   const renderItem = ({ item }: { item: Manga }) => (
     <Pressable
@@ -49,7 +51,7 @@ export default function MangaManagementScreen() {
           {item.title}
         </Text>
         <Text style={[styles.details, { color: theme.icon }]}>
-          {item.status} • {item.year}
+          {(item.status || "").charAt(0).toUpperCase() + (item.status || "").slice(1)} • {item.year}
         </Text>
         <View style={styles.badgeContainer}>
           {!item.isDisplayed && (
