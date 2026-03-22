@@ -6,6 +6,7 @@ export default function RootLayout() {
     <AuthProvider>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="(admin)" options={{ headerShown: false }} />
         <Stack.Screen name="manga/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="auth" options={{ presentation: 'modal', title: 'Login / Register' }} />
       </Stack>

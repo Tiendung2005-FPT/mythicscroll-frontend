@@ -1,8 +1,8 @@
 import axios from 'axios';
 import * as storage from './storage';
-import { Platform } from 'react-native';
 
-export const API_URL = 'https://mythicscroll-backend.onrender.com/api';
+export const API_URL = 'http://localhost:9999/api';
+// export const API_URL = 'https://mythicscroll-backend.onrender.com/api';
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -25,6 +25,10 @@ export interface User {
   id?: string;
   username: string;
   email: string;
+  role?: {
+    _id: string;
+    title: 'Admin' | 'User';
+  };
 }
 
 export interface Manga {
@@ -38,16 +42,19 @@ export interface Manga {
   year: number;
   uploadedAt: string;
   averageRating?: number;
-  ratingCount?: number;
+  ratingCount: number;
   userRating?: number;
+  isDisplayed: boolean;
 }
 
 export interface Chapter {
   _id: string;
   mangaId: string;
-  chapterNumber: string;
+  chapterNumber: number;
   title: string;
   pages: string[];
+  uploadedAt: string;
+  isDisplayed: boolean;
 }
 
 export interface Genre {
@@ -114,7 +121,47 @@ export const logout = async () => {
   await storage.deleteItem('userToken');
 }
 
-export const rateManga = async (mangaId: string, rating: number): Promise<any> => {
-  const res = await api.post(`/manga/${mangaId}/rate`, { rating });
+// Admin Functions
+export const getAllMangas = async (): Promise<Manga[]> => {
+  const res = await api.get('/manga');
   return res.data;
+};
+
+export const getMangaByIdAdmin = async (id: string): Promise<Manga> => {
+  const res = await api.get(`/manga/${id}`);
+  return res.data;
+};
+
+export const createManga = async (data: Partial<Manga>): Promise<Manga> => {
+  const res = await api.post('/manga', data);
+  return res.data;
+};
+
+export const updateManga = async (id: string, data: Partial<Manga>): Promise<Manga> => {
+  const res = await api.put(`/manga/${id}`, data);
+  return res.data;
+};
+
+export const getAllChapters = async (mangaId: string): Promise<Chapter[]> => {
+  const res = await api.get(`/chapters/${mangaId}`);
+  return res.data;
+};
+
+export const getChapterByIdAdmin = async (id: string): Promise<Chapter> => {
+  const res = await api.get(`/chapters/single/${id}`);
+  return res.data;
+};
+
+export const createChapter = async (data: Partial<Chapter>): Promise<Chapter> => {
+  const res = await api.post('/chapters', data);
+  return res.data;
+};
+
+export const updateChapter = async (id: string, data: Partial<Chapter>): Promise<Chapter> => {
+  const res = await api.put(`/chapters/${id}`, data);
+  return res.data;
+};
+
+export const rateManga = async (mangaId: string, rating: number): Promise<void> => {
+  await api.post(`/manga/${mangaId}/rate`, { rating });
 };
