@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Colors } from '../constants/Colors';
+import React from "react";
+import { View, Text, StyleSheet } from "react-native";
+import { Colors } from "../constants/Colors";
 
 interface TagCardProps {
   name: string;
@@ -16,7 +16,7 @@ export const TagCard = ({ name }: TagCardProps) => {
 
 const styles = StyleSheet.create({
   tag: {
-    backgroundColor: Colors.light.tint + '20', // Add some transparency
+    backgroundColor: Colors.light.tint + "20",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
@@ -26,6 +26,6 @@ const styles = StyleSheet.create({
   text: {
     color: Colors.light.tint,
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

@@ -33,6 +33,19 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.menu}>
+        {user.role?.title === 'Admin' && (
+          <Pressable
+            style={({ pressed }) => [
+              styles.menuItem,
+              { borderBottomColor: theme.border },
+              pressed && { backgroundColor: theme.surface }
+            ]}
+            onPress={() => router.push('/(admin)/admin-manga' as any)}>
+            <Ionicons name="shield-checkmark-outline" size={24} color={theme.tint} />
+            <Text style={[styles.menuText, { color: theme.tint }]}>Admin Dashboard</Text>
+          </Pressable>
+        )}
+
         <Pressable
           style={({ pressed }) => [
             styles.menuItem,

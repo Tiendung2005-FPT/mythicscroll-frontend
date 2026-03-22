@@ -77,6 +77,10 @@ export default function BrowseScreen() {
     });
   };
 
+  const clearGenreFilters = () => {
+    setGenreFilters({});
+  };
+
   const toggleSort = (field: string) => {
     if (sortField !== field) {
       setSortField(field);
@@ -149,7 +153,12 @@ export default function BrowseScreen() {
               <View style={[styles.modalContent, { backgroundColor: '#1A1D23' }]}>
                 <View style={styles.modalHeader}>
                   <Text style={styles.modalTitle}>Select Genres</Text>
-                  <Ionicons name="close" size={24} color="#fff" onPress={() => setIsGenreOpen(false)} />
+                  <View style={styles.modalHeaderActions}>
+                    <Pressable onPress={clearGenreFilters}>
+                      <Text style={styles.clearButtonText}>Clear All</Text>
+                    </Pressable>
+                    <Ionicons name="close" size={24} color="#fff" onPress={() => setIsGenreOpen(false)} />
+                  </View>
                 </View>
                 <ScrollView style={styles.modalScroll}>
                   {genres.map(genre => {
@@ -318,6 +327,16 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#333',
+  },
+  modalHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  clearButtonText: {
+    color: '#2ECC71',
+    fontSize: 14,
+    fontWeight: '600',
   },
   modalTitle: {
     fontSize: 18,
