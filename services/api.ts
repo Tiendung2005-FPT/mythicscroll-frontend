@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { Platform } from 'react-native';
 import * as storage from './storage';
 
 export const API_URL = 'https://mythicscroll-backend.onrender.com/api';
@@ -167,30 +168,38 @@ export const rateManga = async (mangaId: string, rating: number): Promise<void> 
 
 export const uploadSingleImage = async (uri: string): Promise<string> => {
   const formData = new FormData();
-  const filename = uri.split('/').pop();
-  const match = /\.(\w+)$/.exec(filename || '');
-  const type = match ? `image/${match[1]}` : `image`;
+  const filename = uri.split('/').pop() || 'image.jpg';
 
-  formData.append('image', { uri, name: filename, type } as any);
+  if (Platform.OS === 'web') {
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    formData.append('image', blob, filename);
+  } else {
+    const match = /\.(\w+)$/.exec(filename);
+    const type = match ? `image/${match[1]}` : `image`;
+    formData.append('image', { uri, name: filename, type } as any);
+  }
 
-  const res = await api.post('/upload/single', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
+  const res = await api.post('/upload/single', formData);
   return res.data.url;
 };
 
 export const uploadMultipleImages = async (uris: string[]): Promise<string[]> => {
   const formData = new FormData();
 
-  uris.forEach((uri, index) => {
-    const filename = uri.split('/').pop();
-    const match = /\.(\w+)$/.exec(filename || '');
-    const type = match ? `image/${match[1]}` : `image`;
-    formData.append('images', { uri, name: filename, type } as any);
-  });
+  for (const uri of uris) {
+    const filename = uri.split('/').pop() || 'image.jpg';
+    if (Platform.OS === 'web') {
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      formData.append('images', blob, filename);
+    } else {
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : `image`;
+      formData.append('images', { uri, name: filename, type } as any);
+    }
+  }
 
-  const res = await api.post('/upload/multiple', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
+  const res = await api.post('/upload/multiple', formData);
   return res.data.urls;
 };

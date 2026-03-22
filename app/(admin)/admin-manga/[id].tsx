@@ -65,7 +65,7 @@ export default function MangaFormScreen() {
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: false, // Don't force a crop
+      allowsEditing: false,
       quality: 0.8,
     });
 

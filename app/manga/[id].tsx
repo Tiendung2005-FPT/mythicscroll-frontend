@@ -33,6 +33,7 @@ export default function MangaDetailScreen() {
   const [genres, setGenres] = useState<Genre[]>([]);
   const [loading, setLoading] = useState(true);
   const [userRating, setUserRating] = useState(0);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   const handleRate = async (rating: number) => {
     if (!manga) return;
@@ -181,12 +182,32 @@ export default function MangaDetailScreen() {
           {manga.description}
         </Text>
 
-        <Text
-          style={[styles.sectionTitle, { color: theme.text, marginTop: 24 }]}
-        >
-          Chapters ({chapters.length})
-        </Text>
-        {chapters.map((chapter) => (
+        <View style={styles.sectionHeaderRow}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>
+            Chapters ({chapters.length})
+          </Text>
+          <Pressable
+            onPress={() => setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"))}
+            style={styles.sortButton}
+          >
+            <Ionicons
+              name={sortOrder === "asc" ? "trending-up" : "trending-down"}
+              size={20}
+              color={theme.tint}
+            />
+            <Text style={[styles.sortText, { color: theme.tint }]}>
+              {sortOrder === "asc" ? "Oldest" : "Newest"}
+            </Text>
+          </Pressable>
+        </View>
+
+        {[...chapters]
+          .sort((a, b) => {
+            const numA = parseFloat(a.chapterNumber.toString());
+            const numB = parseFloat(b.chapterNumber.toString());
+            return sortOrder === "asc" ? numA - numB : numB - numA;
+          })
+          .map((chapter) => (
           <Pressable
             key={chapter._id}
             style={({ pressed }) => [
@@ -347,5 +368,25 @@ const styles = StyleSheet.create({
   },
   chapterTitle: {
     fontSize: 16,
+  },
+  sectionHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 24,
+    marginBottom: 8,
+  },
+  sortButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(0,0,0,0.05)",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  sortText: {
+    fontSize: 12,
+    fontWeight: "600",
   },
 });

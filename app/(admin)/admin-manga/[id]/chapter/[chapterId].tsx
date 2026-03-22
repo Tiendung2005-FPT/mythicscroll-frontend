@@ -20,6 +20,7 @@ import {
   updateChapter,
   Chapter,
   uploadMultipleImages,
+  getAllChapters,
 } from "../../../../../services/api";
 import { Colors } from "../../../../../constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
@@ -46,24 +47,37 @@ export default function ChapterFormScreen() {
 
   const [pagesText, setPagesText] = useState("");
   const [localPageUris, setLocalPageUris] = useState<string[]>([]);
+  const [existingChapters, setExistingChapters] = useState<Chapter[]>([]);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   useEffect(() => {
-    if (!isNew) {
-      const fetchChapter = async () => {
-        try {
+    const fetchAllData = async () => {
+      try {
+        const chaptersData = await getAllChapters(id);
+        setExistingChapters(chaptersData);
+
+        if (!isNew) {
           const data = await getChapterByIdAdmin(chapterId);
           setFormData(data);
           setPagesText(data.pages.join("\n"));
-        } catch (error) {
-          console.error(error);
-          Alert.alert("Error", "Failed to fetch chapter details");
-        } finally {
-          setLoading(false);
+        } else {
+          // Default for new: next integer
+          const maxNum =
+            chaptersData.length > 0
+              ? Math.max(...chaptersData.map((c: any) => parseFloat(c.chapterNumber) || 0))
+              : 0;
+          setFormData((prev) => ({ ...prev, chapterNumber: Math.floor(maxNum) + 1 }));
         }
-      };
-      fetchChapter();
-    }
-  }, [chapterId]);
+      } catch (error) {
+        console.error(error);
+        Alert.alert("Error", "Failed to fetch necessary data");
+      } finally {
+        setLoading(false);
+        setInitialLoading(false);
+      }
+    };
+    fetchAllData();
+  }, [chapterId, id]);
 
   const pickImages = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -110,13 +124,52 @@ export default function ChapterFormScreen() {
         ...manualPages,
       ];
 
-      if (!formData.title || finalPages.length === 0) {
-        Alert.alert("Error", "Title and at least one page URL are required");
+      if (!formData.title || finalPages.length === 0 || !formData.chapterNumber) {
+        Alert.alert("Error", "Title, Chapter Number, and at least one page are required");
         setSaving(false);
         return;
       }
 
-      const payload = { ...formData, pages: finalPages };
+      // Validation
+      const currentChapterNumber = parseFloat(formData.chapterNumber.toString());
+      if (isNaN(currentChapterNumber)) {
+        Alert.alert("Error", "Invalid chapter number");
+        setSaving(false);
+        return;
+      }
+
+      // 1. Uniqueness check
+      const duplicate = existingChapters.find(
+        (c) => 
+          c._id !== chapterId && 
+          parseFloat(c.chapterNumber.toString()) === currentChapterNumber
+      );
+      if (duplicate) {
+        Alert.alert("Error", `Chapter ${currentChapterNumber} already exists!`);
+        setSaving(false);
+        return;
+      }
+
+      // 2. Limit check: max + 1
+      const otherChapters = existingChapters.filter(c => c._id !== chapterId);
+      const maxNum = otherChapters.length > 0 
+        ? Math.max(...otherChapters.map(c => parseFloat(c.chapterNumber.toString()) || 0))
+        : 0;
+      
+      if (currentChapterNumber > maxNum + 1) {
+        Alert.alert(
+          "Invalid Number", 
+          `You can't jump too far ahead! The maximum allowed number is ${maxNum + 1}.`
+        );
+        setSaving(false);
+        return;
+      }
+
+      const payload: Partial<Chapter> = {
+        ...formData,
+        pages: finalPages,
+        chapterNumber: currentChapterNumber,
+      };
       if (isNew) {
         await createChapter(payload);
         Alert.alert("Success", "Chapter created successfully");
@@ -196,7 +249,7 @@ export default function ChapterFormScreen() {
             ]}
             value={formData.chapterNumber?.toString()}
             onChangeText={(text) =>
-              setFormData({ ...formData, chapterNumber: parseFloat(text) || 0 })
+              setFormData((prev) => ({ ...prev, chapterNumber: parseFloat(text) || 0 }))
             }
             keyboardType="numeric"
             placeholder="1"
