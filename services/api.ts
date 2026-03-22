@@ -2,7 +2,8 @@ import axios from 'axios';
 import * as storage from './storage';
 import { Platform } from 'react-native';
 
-export const API_URL = 'https://mythicscroll-backend.onrender.com/api';
+export const API_URL = 'http://localhost:9999/api';
+// export const API_URL = 'https://mythicscroll-backend.onrender.com/api';
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -39,6 +40,7 @@ export interface Manga {
   uploadedAt: string;
   averageRating?: number;
   ratingCount?: number;
+  userRating?: number;
 }
 
 export interface Chapter {
@@ -94,12 +96,12 @@ export const searchManga = async (query: string): Promise<Manga[]> => {
   return res.data;
 };
 
-export const login = async (email: string, password: string):Promise<{token: string; user: User}> => {
+export const login = async (email: string, password: string): Promise<{ token: string; user: User }> => {
   const res = await api.post('/auth/login', { email, password });
   return res.data;
 }
 
-export const register = async (username: string, email: string, password: string):Promise<{token: string; user: User}> => {
+export const register = async (username: string, email: string, password: string): Promise<{ token: string; user: User }> => {
   const res = await api.post('/auth/register', { username, email, password });
   return res.data;
 }
@@ -110,5 +112,10 @@ export const getProfile = async (): Promise<User> => {
 }
 
 export const logout = async () => {
-    await storage.deleteItem('userToken');
+  await storage.deleteItem('userToken');
 }
+
+export const rateManga = async (mangaId: string, rating: number): Promise<any> => {
+  const res = await api.post(`/manga/${mangaId}/rate`, { rating });
+  return res.data;
+};
