@@ -1,34 +1,48 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, useColorScheme, ActivityIndicator, Dimensions, Pressable } from 'react-native';
-import { useLocalSearchParams, router, Stack } from 'expo-router';
-import { getChapterById, Chapter } from '../../../../services/api';
-import { Colors } from '../../../../constants/Colors';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Image,
+  useColorScheme,
+  ActivityIndicator,
+  Dimensions,
+  Pressable,
+} from "react-native";
+import { useLocalSearchParams, router, Stack } from "expo-router";
+import { getChapterById, Chapter } from "../../../../services/api";
+import { Colors } from "../../../../constants/Colors";
+import { Ionicons } from "@expo/vector-icons";
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 const MangaPage = ({ uri, index }: { uri: string; index: number }) => {
-  const [aspectRatio, setAspectRatio] = useState(0.7); 
+  const [aspectRatio, setAspectRatio] = useState(0.7);
 
   useEffect(() => {
-    Image.getSize(uri, (w, h) => {
-      if (w > 0 && h > 0) {
-        setAspectRatio(w / h);
-      }
-    }, (err) => {
-      console.warn('Failed to get image size', err);
-    });
+    Image.getSize(
+      uri,
+      (w, h) => {
+        if (w > 0 && h > 0) {
+          setAspectRatio(w / h);
+        }
+      },
+      (err) => {
+        console.warn("Failed to get image size", err);
+      },
+    );
   }, [uri]);
 
   return (
     <Image
       source={{ uri }}
-      style={{ 
-        width: SCREEN_WIDTH, 
-        aspectRatio, 
-        marginTop: index === 0 ? 0 : -1 // Fix sub-pixel gaps
+      style={{
+        width: SCREEN_WIDTH,
+        aspectRatio,
+        marginTop: index === 0 ? 0 : -1,
       }}
-      resizeMode="stretch" // Ensure it fills the exact calculated width/height
+      resizeMode="stretch"
     />
   );
 };
@@ -36,7 +50,7 @@ const MangaPage = ({ uri, index }: { uri: string; index: number }) => {
 export default function ChapterReaderScreen() {
   const { chapterId } = useLocalSearchParams<{ chapterId: string }>();
   const colorScheme = useColorScheme();
-  const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
+  const theme = colorScheme === "dark" ? Colors.dark : Colors.light;
 
   const [chapter, setChapter] = useState<Chapter | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,7 +61,7 @@ export default function ChapterReaderScreen() {
         const res = await getChapterById(chapterId);
         setChapter(res);
       } catch (error) {
-        console.error('Failed to fetch chapter', error);
+        console.error("Failed to fetch chapter", error);
       } finally {
         setLoading(false);
       }
@@ -57,7 +71,9 @@ export default function ChapterReaderScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: theme.background }]}>
+      <View
+        style={[styles.loadingContainer, { backgroundColor: theme.background }]}
+      >
         <ActivityIndicator size="large" color={theme.tint} />
       </View>
     );
@@ -65,7 +81,16 @@ export default function ChapterReaderScreen() {
 
   if (!chapter) {
     return (
-      <View style={[styles.container, { backgroundColor: theme.background, justifyContent: 'center', alignItems: 'center' }]}>
+      <View
+        style={[
+          styles.container,
+          {
+            backgroundColor: theme.background,
+            justifyContent: "center",
+            alignItems: "center",
+          },
+        ]}
+      >
         <Text style={{ color: theme.text }}>Chapter not found</Text>
       </View>
     );
@@ -74,19 +99,27 @@ export default function ChapterReaderScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: theme.surface, borderBottomColor: theme.border },
+        ]}
+      >
         <Pressable onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={theme.text} />
         </Pressable>
         <View style={styles.headerInfo}>
-          <Text style={[styles.chapterInfo, { color: theme.text }]} numberOfLines={1}>
+          <Text
+            style={[styles.chapterInfo, { color: theme.text }]}
+            numberOfLines={1}
+          >
             Chapter {chapter.chapterNumber}: {chapter.title}
           </Text>
         </View>
       </View>
 
-      <ScrollView 
-        style={styles.reader} 
+      <ScrollView
+        style={styles.reader}
         contentContainerStyle={styles.readerContent}
         showsVerticalScrollIndicator={false}
       >
@@ -104,17 +137,16 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   header: {
-    height: 60,
-    flexDirection: 'row',
-    alignItems: 'center',
+    paddingTop: 10,
+    paddingBottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    paddingTop: 0, 
-    marginTop: 40, // Added back for safe area offset if header is hidden
   },
   backButton: {
     padding: 4,
@@ -125,7 +157,7 @@ const styles = StyleSheet.create({
   },
   chapterInfo: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   reader: {
     flex: 1,
