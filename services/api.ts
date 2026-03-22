@@ -2,8 +2,7 @@ import axios from 'axios';
 import * as storage from './storage';
 import { Platform } from 'react-native';
 
-export const API_URL = 'http://localhost:9999/api';
-// export const API_URL = 'https://mythicscroll-backend.onrender.com/api';
+export const API_URL = 'https://mythicscroll-backend.onrender.com/api';
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -57,22 +56,22 @@ export interface Genre {
 }
 
 export const getMangas = async (params: { keyword?: string; genre?: string[]; status?: string; sort?: string } = {}): Promise<Manga[]> => {
-  const res = await api.get('/manga', { params });
+  const res = await api.get('/manga/available', { params });
   return res.data;
 };
 
 export const getMangaById = async (id: string): Promise<Manga> => {
-  const res = await api.get(`/manga/${id}`);
+  const res = await api.get(`/manga/available/${id}`);
   return res.data;
 };
 
 export const getChaptersByMangaId = async (mangaId: string): Promise<Chapter[]> => {
-  const res = await api.get(`/chapters/${mangaId}`);
+  const res = await api.get(`/chapters/${mangaId}/available`);
   return res.data;
 };
 
 export const getChapterById = async (chapterId: string): Promise<Chapter> => {
-  const res = await api.get(`/chapters/single/${chapterId}`);
+  const res = await api.get(`/chapters/single/${chapterId}/available`);
   return res.data;
 };
 
@@ -82,17 +81,17 @@ export const getGenres = async (): Promise<Genre[]> => {
 };
 
 export const getFeaturedManga = async (): Promise<Manga[]> => {
-  const res = await api.get('/manga', { params: { sort: '-uploadedAt' } });
+  const res = await api.get('/manga/available', { params: { sort: '-uploadedAt' } });
   return res.data.slice(0, 5);
 };
 
 export const getLatestUpdates = async (): Promise<Manga[]> => {
-  const res = await api.get('/manga', { params: { sort: '-uploadedAt' } });
+  const res = await api.get('/manga/available', { params: { sort: '-uploadedAt' } });
   return res.data.slice(0, 10);
 };
 
 export const searchManga = async (query: string): Promise<Manga[]> => {
-  const res = await api.get('/manga', { params: { keyword: query } });
+  const res = await api.get('/manga/available', { params: { keyword: query } });
   return res.data;
 };
 
