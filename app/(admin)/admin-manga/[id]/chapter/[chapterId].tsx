@@ -48,8 +48,8 @@ export default function ChapterFormScreen() {
   const [pagesText, setPagesText] = useState("");
   const [localPageUris, setLocalPageUris] = useState<string[]>([]);
   const [existingChapters, setExistingChapters] = useState<Chapter[]>([]);
-  const [initialLoading, setInitialLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [initialPages, setInitialPages] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchAllData = async () => {
@@ -61,24 +61,30 @@ export default function ChapterFormScreen() {
           const data = await getChapterByIdAdmin(chapterId);
           setFormData(data);
           setPagesText(data.pages.join("\n"));
+          setInitialPages(data.pages);
         } else {
-          // Default for new: next integer
           const maxNum =
             chaptersData.length > 0
-              ? Math.max(...chaptersData.map((c: any) => parseFloat(c.chapterNumber) || 0))
+              ? Math.max(
+                  ...chaptersData.map(
+                    (c: any) => parseFloat(c.chapterNumber) || 0,
+                  ),
+                )
               : 0;
-          setFormData((prev) => ({ ...prev, chapterNumber: Math.floor(maxNum) + 1 }));
+          setFormData((prev) => ({
+            ...prev,
+            chapterNumber: Math.floor(maxNum) + 1,
+          }));
         }
       } catch (error) {
         console.error(error);
         Alert.alert("Error", "Failed to fetch necessary data");
       } finally {
         setLoading(false);
-        setInitialLoading(false);
       }
     };
     fetchAllData();
-  }, [chapterId, id]);
+  }, [chapterId, id, isNew]);
 
   const pickImages = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -119,20 +125,36 @@ export default function ChapterFormScreen() {
         uploadedUrls = await uploadMultipleImages(localPageUris);
       }
 
-      const finalPages = [
-        ...(formData.pages || []),
-        ...uploadedUrls,
-        ...manualPages,
-      ];
+      let finalPages: string[] = [];
 
-      if (!formData.title || finalPages.length === 0 || !formData.chapterNumber) {
-        setErrorMsg("Title, Chapter Number, and at least one page are required");
+      if (isNew) {
+        finalPages = [...uploadedUrls, ...manualPages];
+      } else {
+        const currentFormPages = formData.pages || [];
+
+        const newManualPages = manualPages.filter(
+          (page: string) => !initialPages.includes(page),
+        );
+
+        finalPages = [...currentFormPages, ...uploadedUrls, ...newManualPages];
+      }
+
+      if (
+        !formData.title ||
+        finalPages.length === 0 ||
+        !formData.chapterNumber
+      ) {
+        setErrorMsg(
+          "Title, Chapter Number, and at least one page are required",
+        );
         setSaving(false);
         return;
       }
 
       // Validation
-      const currentChapterNumber = parseFloat(formData.chapterNumber.toString());
+      const currentChapterNumber = parseFloat(
+        formData.chapterNumber.toString(),
+      );
       if (isNaN(currentChapterNumber)) {
         setErrorMsg("Invalid chapter number");
         setSaving(false);
@@ -141,25 +163,32 @@ export default function ChapterFormScreen() {
 
       // 1. Uniqueness check
       const duplicate = existingChapters.find(
-        (c) => 
-          c._id !== chapterId && 
-          parseFloat(c.chapterNumber.toString()) === currentChapterNumber
+        (c) =>
+          c._id !== chapterId &&
+          parseFloat(c.chapterNumber.toString()) === currentChapterNumber,
       );
       if (duplicate) {
-        setErrorMsg(`Chapter ${currentChapterNumber} already exists in this manga.`);
+        setErrorMsg(
+          `Chapter ${currentChapterNumber} already exists in this manga.`,
+        );
         setSaving(false);
         return;
       }
 
       // 2. Limit check: max + 1
-      const otherChapters = existingChapters.filter(c => c._id !== chapterId);
-      const maxNum = otherChapters.length > 0 
-        ? Math.max(...otherChapters.map(c => parseFloat(c.chapterNumber.toString()) || 0))
-        : 0;
-      
+      const otherChapters = existingChapters.filter((c) => c._id !== chapterId);
+      const maxNum =
+        otherChapters.length > 0
+          ? Math.max(
+              ...otherChapters.map(
+                (c) => parseFloat(c.chapterNumber.toString()) || 0,
+              ),
+            )
+          : 0;
+
       if (currentChapterNumber > maxNum + 1) {
         setErrorMsg(
-          `You can't jump too far ahead! The maximum allowed number is ${maxNum + 1}.`
+          `You can't jump too far ahead! The maximum allowed number is ${maxNum + 1}.`,
         );
         setSaving(false);
         return;
@@ -262,7 +291,10 @@ export default function ChapterFormScreen() {
             ]}
             value={formData.chapterNumber?.toString()}
             onChangeText={(text) => {
-              setFormData((prev) => ({ ...prev, chapterNumber: parseFloat(text) || 0 }));
+              setFormData((prev) => ({
+                ...prev,
+                chapterNumber: parseFloat(text) || 0,
+              }));
               if (errorMsg) setErrorMsg(null);
             }}
             keyboardType="numeric"

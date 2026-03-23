@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   useColorScheme,
   Image,
+  TextInput,
 } from "react-native";
 import { Stack, router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -17,6 +18,7 @@ import { Colors } from "../../../constants/Colors";
 export default function MangaManagementScreen() {
   const [mangas, setMangas] = useState<Manga[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   const colorScheme = useColorScheme();
   const theme = colorScheme === "dark" ? Colors.dark : Colors.light;
 
@@ -31,10 +33,17 @@ export default function MangaManagementScreen() {
     }
   };
 
+  const filteredMangas = useMemo(() => {
+    if (!searchQuery.trim()) return mangas;
+    return mangas.filter((manga) =>
+      manga.title.toLowerCase().includes(searchQuery.toLowerCase()),
+    );
+  }, [mangas, searchQuery]);
+
   useFocusEffect(
     useCallback(() => {
       fetchMangas();
-    }, [])
+    }, []),
   );
 
   const renderItem = ({ item }: { item: Manga }) => (
@@ -51,7 +60,9 @@ export default function MangaManagementScreen() {
           {item.title}
         </Text>
         <Text style={[styles.details, { color: theme.icon }]}>
-          {(item.status || "").charAt(0).toUpperCase() + (item.status || "").slice(1)} • {item.year}
+          {(item.status || "").charAt(0).toUpperCase() +
+            (item.status || "").slice(1)}{" "}
+          • {item.year}
         </Text>
         <View style={styles.badgeContainer}>
           {!item.isDisplayed && (
@@ -97,6 +108,24 @@ export default function MangaManagementScreen() {
         </Pressable>
       </View>
 
+      <View
+        style={[styles.searchContainer, { backgroundColor: theme.surface }]}
+      >
+        <Ionicons
+          name="search"
+          size={20}
+          color={theme.icon}
+          style={styles.searchIcon}
+        />
+        <TextInput
+          style={[styles.searchInput, { color: theme.text }]}
+          placeholder="Search manga..."
+          placeholderTextColor={theme.icon}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+      </View>
+
       {loading ? (
         <ActivityIndicator
           size="large"
@@ -105,12 +134,19 @@ export default function MangaManagementScreen() {
         />
       ) : (
         <FlatList
-          data={mangas}
+          data={filteredMangas}
           keyExtractor={(item) => item._id}
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
           onRefresh={fetchMangas}
           refreshing={loading}
+          ListEmptyComponent={
+            <Text style={[styles.emptyText, { color: theme.icon }]}>
+              {searchQuery.trim()
+                ? "No manga found matching your search."
+                : "No manga found."}
+            </Text>
+          }
         />
       )}
     </View>
@@ -130,6 +166,22 @@ const styles = StyleSheet.create({
   backButton: { padding: 4 },
   addButton: { padding: 4 },
   headerTitle: { fontSize: 18, fontWeight: "700" },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 16,
+    marginVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    height: 44,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+  },
   listContent: { padding: 16 },
   itemCard: {
     flexDirection: "row",
@@ -154,5 +206,10 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "700",
     textTransform: "uppercase",
+  },
+  emptyText: {
+    textAlign: "center",
+    marginTop: 40,
+    fontSize: 15,
   },
 });
