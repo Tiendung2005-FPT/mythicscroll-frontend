@@ -88,7 +88,7 @@ export const getGenres = async (): Promise<Genre[]> => {
 };
 
 export const getFeaturedManga = async (): Promise<Manga[]> => {
-  const res = await api.get('/manga/available', { params: { sort: '-uploadedAt' } });
+  const res = await api.get('/manga/available', { params: { sort: '-averageRating' } });
   return res.data.slice(0, 5);
 };
 

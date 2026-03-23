@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -8,8 +8,14 @@ import {
   ActivityIndicator,
   useColorScheme,
   Alert,
+  TextInput,
 } from "react-native";
-import { Stack, useLocalSearchParams, router, useFocusEffect } from "expo-router";
+import {
+  Stack,
+  useLocalSearchParams,
+  router,
+  useFocusEffect,
+} from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import {
   getAllChapters,
@@ -24,10 +30,11 @@ export default function ChapterManagementScreen() {
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [manga, setManga] = useState<Manga | null>(null);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   const colorScheme = useColorScheme();
   const theme = colorScheme === "dark" ? Colors.dark : Colors.light;
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const [chaptersData, mangaData] = await Promise.all([
         getAllChapters(id),
@@ -41,12 +48,28 @@ export default function ChapterManagementScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  const filteredChapters = useMemo(() => {
+    let filtered = chapters;
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      filtered = chapters.filter(
+        (chapter) =>
+          chapter.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          chapter.chapterNumber.toString().includes(searchQuery.toLowerCase()),
+      );
+    }
+
+    // Sort by chapterNumber descending
+    return filtered.sort((a, b) => b.chapterNumber - a.chapterNumber);
+  }, [chapters, searchQuery]);
 
   useFocusEffect(
     useCallback(() => {
       fetchData();
-    }, [id])
+    }, [fetchData]),
   );
 
   const renderItem = ({ item }: { item: Chapter }) => (
@@ -110,6 +133,24 @@ export default function ChapterManagementScreen() {
         </Pressable>
       </View>
 
+      <View
+        style={[styles.searchContainer, { backgroundColor: theme.surface }]}
+      >
+        <Ionicons
+          name="search"
+          size={20}
+          color={theme.icon}
+          style={styles.searchIcon}
+        />
+        <TextInput
+          style={[styles.searchInput, { color: theme.text }]}
+          placeholder="Search chapters..."
+          placeholderTextColor={theme.icon}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+      </View>
+
       {loading ? (
         <ActivityIndicator
           size="large"
@@ -118,7 +159,7 @@ export default function ChapterManagementScreen() {
         />
       ) : (
         <FlatList
-          data={chapters}
+          data={filteredChapters}
           keyExtractor={(item) => item._id}
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
@@ -126,7 +167,9 @@ export default function ChapterManagementScreen() {
           refreshing={loading}
           ListEmptyComponent={
             <Text style={[styles.emptyText, { color: theme.icon }]}>
-              No chapters yet. Click + to add one.
+              {searchQuery.trim()
+                ? "No chapters found matching your search."
+                : "No chapters yet. Click + to add one."}
             </Text>
           }
         />
@@ -152,6 +195,22 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     flex: 1,
     textAlign: "center",
+  },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 16,
+    marginVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    height: 44,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
   },
   listContent: { padding: 16 },
   itemCard: {
