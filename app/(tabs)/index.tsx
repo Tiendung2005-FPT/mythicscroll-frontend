@@ -1,33 +1,60 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, useColorScheme, ActivityIndicator, ScrollView } from 'react-native';
-import { Colors } from '../../constants/Colors';
-import { getFeaturedManga, getLatestUpdates, Manga } from '../../services/api';
-import { MangaCard } from '../../components/MangaCard';
-import { router } from 'expo-router';
+import React, { useEffect, useState, useCallback } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  useColorScheme,
+  ActivityIndicator,
+  ScrollView,
+  RefreshControl,
+} from "react-native";
+import { Colors } from "../../constants/Colors";
+import { getFeaturedManga, getLatestUpdates, Manga } from "../../services/api";
+import { MangaCard } from "../../components/MangaCard";
+import { router } from "expo-router";
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
-  const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
+  const theme = colorScheme === "dark" ? Colors.dark : Colors.light;
 
   const [featuredManga, setFeaturedManga] = useState<Manga[]>([]);
   const [latestUpdates, setLatestUpdates] = useState<Manga[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const [featured, latest] = await Promise.all([
+        getFeaturedManga(),
+        getLatestUpdates(),
+      ]);
+      setFeaturedManga(featured);
+      setLatestUpdates(latest);
+    } catch (error) {
+      console.error("Failed to refresh home data", error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [featured, latest] = await Promise.all([
           getFeaturedManga(),
-          getLatestUpdates()
+          getLatestUpdates(),
         ]);
         setFeaturedManga(featured);
         setLatestUpdates(latest);
       } catch (error) {
-        console.error('Failed to fetch home data', error);
+        console.error("Failed to fetch home data", error);
       } finally {
         setLoading(false);
       }
     };
+
     fetchData();
   }, []);
 
@@ -37,16 +64,37 @@ export default function HomeScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, { backgroundColor: theme.background, justifyContent: 'center', alignItems: 'center' }]}>
+      <View
+        style={[
+          styles.container,
+          {
+            backgroundColor: theme.background,
+            justifyContent: "center",
+            alignItems: "center",
+          },
+        ]}
+      >
         <ActivityIndicator size="large" color={theme.tint} />
       </View>
     );
   }
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: theme.background }]}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={theme.tint}
+          colors={[theme.tint]}
+        />
+      }
+    >
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>Featured</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>
+          Featured
+        </Text>
         <FlatList
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -60,7 +108,9 @@ export default function HomeScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>Latest Updates</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>
+          Latest Updates
+        </Text>
         <FlatList
           data={latestUpdates}
           keyExtractor={(item) => item._id}
@@ -86,7 +136,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 22,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginLeft: 16,
     marginBottom: 16,
   },
@@ -100,6 +150,6 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   row: {
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
   },
 });
