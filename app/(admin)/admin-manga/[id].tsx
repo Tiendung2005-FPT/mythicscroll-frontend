@@ -20,6 +20,8 @@ import {
   updateManga,
   Manga,
   uploadSingleImage,
+  getGenres,
+  Genre,
 } from "../../../services/api";
 import { Colors } from "../../../constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
@@ -32,6 +34,7 @@ export default function MangaFormScreen() {
 
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
+  const [availableGenres, setAvailableGenres] = useState<Genre[]>([]);
 
   const [formData, setFormData] = useState<Partial<Manga>>({
     title: "",
@@ -46,21 +49,34 @@ export default function MangaFormScreen() {
   const [localImageUri, setLocalImageUri] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isNew) {
-      const fetchManga = async () => {
-        try {
-          const data = await getMangaByIdAdmin(id);
-          setFormData(data);
-        } catch (error) {
-          console.error(error);
-          Alert.alert("Error", "Failed to fetch manga details");
-        } finally {
-          setLoading(false);
+    const fetchInitialData = async () => {
+      try {
+        const [genresRes] = await Promise.all([getGenres()]);
+        setAvailableGenres(genresRes);
+
+        if (!isNew) {
+          const mangaData = await getMangaByIdAdmin(id);
+          setFormData(mangaData);
         }
-      };
-      fetchManga();
-    }
+      } catch (error) {
+        console.error(error);
+        Alert.alert("Error", "Failed to fetch initial data");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchInitialData();
   }, [id]);
+
+  const toggleGenreSelection = (genreId: string) => {
+    setFormData((prev) => {
+      const genres = prev.genres || [];
+      if (genres.includes(genreId)) {
+        return { ...prev, genres: genres.filter((g) => g !== genreId) };
+      }
+      return { ...prev, genres: [...genres, genreId] };
+    });
+  };
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -206,6 +222,39 @@ export default function MangaFormScreen() {
               </View>
             )}
           </Pressable>
+
+          <View style={styles.section}>
+            <Text style={[styles.label, { color: theme.text }]}>Genres</Text>
+            <View style={styles.genreList}>
+              {availableGenres.map((genre) => {
+                const isSelected = formData.genres?.includes(genre._id);
+                return (
+                  <Pressable
+                    key={genre._id}
+                    style={[
+                      styles.genreChip,
+                      { borderColor: theme.border },
+                      isSelected && {
+                        backgroundColor: theme.tint,
+                        borderColor: theme.tint,
+                      },
+                    ]}
+                    onPress={() => toggleGenreSelection(genre._id)}
+                  >
+                    <Text
+                      style={[
+                        styles.genreChipText,
+                        { color: theme.text },
+                        isSelected && { color: "#fff" },
+                      ]}
+                    >
+                      {genre.name}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
 
           <View style={styles.row}>
             <View style={{ flex: 1, marginRight: 10 }}>
@@ -404,6 +453,25 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   saveButtonText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  section: {
+    marginBottom: 20,
+  },
+  genreList: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  genreChip: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginBottom: 4,
+  },
+  genreChipText: {
+    fontSize: 13,
+    fontWeight: "500",
+  },
   chaptersButton: {
     flexDirection: "row",
     padding: 16,

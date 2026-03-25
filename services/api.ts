@@ -121,7 +121,6 @@ export const logout = async () => {
   await storage.deleteItem('userToken');
 }
 
-// Admin Functions
 export const getAllMangas = async (): Promise<Manga[]> => {
   const res = await api.get('/manga');
   return res.data;

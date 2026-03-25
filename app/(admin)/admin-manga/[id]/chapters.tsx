@@ -53,7 +53,6 @@ export default function ChapterManagementScreen() {
   const filteredChapters = useMemo(() => {
     let filtered = chapters;
 
-    // Apply search filter
     if (searchQuery.trim()) {
       filtered = chapters.filter(
         (chapter) =>
@@ -62,7 +61,6 @@ export default function ChapterManagementScreen() {
       );
     }
 
-    // Sort by chapterNumber descending
     return filtered.sort((a, b) => b.chapterNumber - a.chapterNumber);
   }, [chapters, searchQuery]);
 
