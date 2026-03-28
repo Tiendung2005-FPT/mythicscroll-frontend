@@ -20,6 +20,7 @@ import {
 } from "../../../../services/api";
 import { Colors } from "../../../../constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
+import { useAuth } from "../../../../context/AuthContext";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -337,6 +338,7 @@ export default function ChapterReaderScreen() {
   const { chapterId } = useLocalSearchParams<{ chapterId: string }>();
   const colorScheme = useColorScheme();
   const theme = colorScheme === "dark" ? Colors.dark : Colors.light;
+  const { user } = useAuth();
 
   const [chapter, setChapter] = useState<Chapter | null>(null);
   const [allChapters, setAllChapters] = useState<Chapter[]>([]);
@@ -425,7 +427,27 @@ export default function ChapterReaderScreen() {
         </Pressable>
       </View>
 
-      {readingMode === "long-strip" ? (
+      {chapter.isLimitReached ? (
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 24, backgroundColor: theme.background }}>
+          <Ionicons name={user ? "lock-closed" : "person-circle-outline"} size={80} color={theme.tint} style={{ marginBottom: 20 }} />
+          <Text style={{ color: theme.text, fontSize: 24, fontWeight: "bold", textAlign: "center", marginBottom: 12 }}>
+            {user ? "Daily Limit Reached" : "Login Required"}
+          </Text>
+          <Text style={{ color: theme.text, opacity: 0.7, fontSize: 16, textAlign: "center", marginBottom: 30, lineHeight: 24 }}>
+            {user 
+              ? "You've hit your free limit of 5 chapters for today. Subscribe to Premium for unlimited access!"
+              : "Please sign in or create an account to start reading your 5 free chapters per day."}
+          </Text>
+          <Pressable
+            style={{ backgroundColor: theme.tint, paddingHorizontal: 32, paddingVertical: 16, borderRadius: 30, shadowColor: theme.tint, shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 5 }}
+            onPress={() => router.push(user ? "/checkout" : "/auth")}
+          >
+            <Text style={{ color: "#000", fontWeight: "bold", fontSize: 16 }}>
+              {user ? "Unlock Unlimited Reading" : "Sign In / Register"}
+            </Text>
+          </Pressable>
+        </View>
+      ) : readingMode === "long-strip" ? (
         <ScrollView
           style={[styles.reader, { backgroundColor: "#000" }]}
           contentContainerStyle={[
@@ -434,12 +456,12 @@ export default function ChapterReaderScreen() {
           ]}
           showsVerticalScrollIndicator={false}
         >
-          {chapter.pages.map((page, index) => (
+          {chapter.pages && chapter.pages.map((page, index) => (
             <MangaPage key={`${page}-${index}`} uri={page} index={index} />
           ))}
         </ScrollView>
       ) : (
-        <SinglePageViewer pages={chapter.pages} theme={theme} />
+        <SinglePageViewer pages={chapter.pages || []} theme={theme} />
       )}
 
       <SettingsModal

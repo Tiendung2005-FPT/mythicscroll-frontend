@@ -27,10 +27,33 @@ export default function ProfileScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={[styles.profileHeader, { backgroundColor: theme.surface }]}>
-        <Ionicons name="person-circle" size={80} color={theme.tint} />
+        <Ionicons name="person-circle" size={80} color={user.isSubscribed ? '#D4AF37' : theme.tint} />
         <Text style={[styles.username, { color: theme.text }]}>{user.username}</Text>
         <Text style={[styles.email, { color: theme.icon }]}>{user.email}</Text>
+        
+        <View style={[styles.badge, { backgroundColor: user.isSubscribed ? 'rgba(212, 175, 55, 0.2)' : 'rgba(150, 150, 150, 0.2)' }]}>
+          <Ionicons name={user.isSubscribed ? "star" : "bookmark-outline"} size={14} color={user.isSubscribed ? "#D4AF37" : theme.text} />
+          <Text style={[styles.badgeText, { color: user.isSubscribed ? "#D4AF37" : theme.text }]}>
+            {user.isSubscribed ? "Premium Member" : "Free Tier"}
+          </Text>
+        </View>
       </View>
+      
+      {!user.isSubscribed && (
+        <Pressable 
+          style={styles.premiumBanner}
+          onPress={() => router.push('/checkout')}
+        >
+          <View style={styles.bannerContent}>
+            <Ionicons name="star" size={24} color="#D4AF37" />
+            <View style={{ marginLeft: 15, flex: 1 }}>
+              <Text style={styles.bannerTitle}>Go Premium</Text>
+              <Text style={styles.bannerP}>Unlock unlimited daily chapters!</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#D4AF37" />
+          </View>
+        </Pressable>
+      )}
 
       <View style={styles.menu}>
         {user.role?.title === 'Admin' && (
@@ -108,4 +131,42 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginTop: 10,
+    gap: 6
+  },
+  badgeText: {
+    fontSize: 14,
+    fontWeight: '600'
+  },
+  premiumBanner: {
+    marginHorizontal: 16,
+    marginBottom: 24,
+    borderRadius: 16,
+    backgroundColor: 'rgba(212, 175, 55, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.3)',
+    overflow: 'hidden'
+  },
+  bannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+  },
+  bannerTitle: {
+    color: '#D4AF37',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 4
+  },
+  bannerP: {
+    color: '#D4AF37',
+    opacity: 0.8,
+    fontSize: 14
+  }
 });
