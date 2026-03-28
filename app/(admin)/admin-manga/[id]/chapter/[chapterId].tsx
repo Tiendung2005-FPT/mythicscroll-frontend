@@ -361,27 +361,6 @@ export default function ChapterFormScreen() {
             </Pressable>
           </View>
 
-          <Text style={[styles.label, { color: theme.text, marginTop: 20 }]}>
-            Manual URLs (one per line)
-          </Text>
-          <TextInput
-            style={[
-              styles.input,
-              styles.textArea,
-              {
-                backgroundColor: theme.surface,
-                color: theme.text,
-                borderColor: theme.border,
-              },
-            ]}
-            value={pagesText}
-            onChangeText={setPagesText}
-            placeholder="https://example.com/page.jpg"
-            placeholderTextColor={theme.icon}
-            multiline
-            numberOfLines={5}
-          />
-
           <View style={styles.switchRow}>
             <Text
               style={[styles.label, { color: theme.text, marginBottom: 0 }]}

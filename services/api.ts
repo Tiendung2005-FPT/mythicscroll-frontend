@@ -2,7 +2,8 @@ import axios from 'axios';
 import { Platform } from 'react-native';
 import * as storage from './storage';
 
-export const API_URL = 'https://mythicscroll-backend.onrender.com/api';
+// export const API_URL = 'https://mythicscroll-backend.onrender.com/api';
+export const API_URL = 'http://localhost:9999/api';
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -28,6 +29,11 @@ export interface User {
   role?: {
     _id: string;
     title: 'Admin' | 'User';
+  };
+  isSubscribed?: boolean;
+  readHistory?: {
+    date: string;
+    count: number;
   };
 }
 
@@ -55,6 +61,7 @@ export interface Chapter {
   pages: string[];
   uploadedAt: string;
   isDisplayed: boolean;
+  isLimitReached?: boolean;
 }
 
 export interface Genre {
@@ -117,11 +124,15 @@ export const getProfile = async (): Promise<User> => {
   return res.data;
 }
 
+export const subscribe = async (): Promise<User> => {
+  const res = await api.post('/users/subscribe');
+  return res.data;
+}
+
 export const logout = async () => {
   await storage.deleteItem('userToken');
 }
 
-// Admin Functions
 export const getAllMangas = async (): Promise<Manga[]> => {
   const res = await api.get('/manga');
   return res.data;
